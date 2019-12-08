@@ -1,0 +1,179 @@
+<html>
+  <style>
+    body {
+      background-color: black;
+      color: rgb(255, 0 , 255);
+    }
+    table {
+      width: 900px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    table img {
+      width: 100%;
+    }
+    .as-header {
+      font-size: 1.6em;
+      font-weight: bold;
+      padding-top: .2em;
+      padding-bottom: .2em;
+      border-top: 2px solid rgb(255, 0 , 255);
+    }
+    .image-header {
+      padding-top: .6em;
+      padding-bottom: .6em;
+      border-bottom: 1px solid rgb(255, 0 , 255, 0.5);
+    }
+    .path-header {
+      #font-size: 1.2em;
+      padding-top: .2em;
+      padding-bottom: .2em;
+      border-top: 1px solid;
+      border-bottom: 1px solid;
+    }
+    tr.online {
+      color: rgb(122, 248, 80);
+    }
+    tr.offline {
+      color: rgb(255, 76, 48);
+    }
+    tr.partialreach {
+      color: rgb(255, 206, 25);
+    }
+    tr.result-header td {
+      color: rgb(255, 255, 255);
+    }
+    td.row1, td.row2, td.row4 {
+      border-right: 1px solid #FFFFFF;
+    }
+    td.row2, td.row3, td.row5 {
+      padding-left: 1em;
+    }
+    td.row1, td.row3, td.row4 {
+      min-width: 130px;
+    }
+    td.row2-sub {
+      font-style: italic;
+    }
+    td.yes {
+      color: rgb(20, 204, 176);
+    }
+    td.network-separator {
+      height: 1em;
+    }
+    tr.prefix-row td {
+      border-top: 1px solid #333333;
+      padding-top: .4em;
+    }
+  </style>
+ <head>
+    <title>Notes on Iran's Gas Protests Internet Disconnection (November 2019)</title>
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@cda" />
+    <meta name="twitter:title" content="Notes on Iran's Gas Protests Internet Disconnection" />
+    <meta name="twitter:description" content="BGP availability for Iranian networks during the Internet shutdown in November 2019." />
+    <meta name="twitter:image" content="http://cda.io/gas-protests/as_neighbor_graphs/as12880.png" />
+    <script type="text/javascript" language="javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js"></script>
+
+    <script type="text/javascript">
+        var asLabels;
+        var reachColors = {
+          0: 'online',
+          .5: 'partialreach',
+          1: 'offline'
+        }
+        $(document).ready(function(e) {
+        $.getJSON( "structureddata.json" , function(coreData){
+          asLabels = coreData['labels'];
+          var tbody = $('table').find('tbody');
+
+          for(var originAsn in coreData['data'] /*{'5618': [], '41881': [], '20891': []} */){
+            var asHeader = asLabels[originAsn] + " (AS" + originAsn + ")";
+            tbody.append($('<tr>').append($('<td>').text(asHeader).attr("class", "as-header").attr("colspan", "5")));
+            tbody.append($('<tr>').append($('<td>')
+              .append($('<a>').attr('href', "/as_neighbor_graphs/" + originAsn +".png")
+              .append($('<img>').attr('src', "/as_neighbor_graphs/" + originAsn +".png").attr('onerror', "this.style.display='none';")
+              )
+              ).attr("colspan", "5").attr("class", "image-header")));
+            tbody.append($('<tr>')
+                  .append($('<td>').text('Prefix').attr("class", "row1"))
+                  .append($('<td>').text('Network Label').attr("class", "row2"))
+                  .append($('<td>').text('Down').attr("class", "row3"))
+                  .append($('<td>').text('Up').attr("class", "row4"))
+                  .append($('<td>').text('Traffic').attr("class", "row5"))
+                  .attr("class", "result-header")
+                );
+
+            for(var prefixAnnounced in coreData['data'][originAsn]['prefixes']){
+              var prefixRecord = coreData['data'][originAsn]['prefixes'][prefixAnnounced];
+
+              if(prefixRecord.status != 0 && Object.keys(prefixRecord['records']).length > 1) {
+                tbody.append($('<tr>')
+                      .append($('<td>').text(prefixAnnounced).attr("class", "row1"))
+                      .append($('<td>').text(prefixRecord.label).attr("class", "row2").attr("colspan", "3"))
+                      .append($('<td>').text(((prefixRecord.activity.length > 0) ? 'Yes' : 'No')).attr("class", ((prefixRecord.length > 0) ? 'yes row5' : 'row5')))
+                      .attr("class", 'prefix-row ' + reachColors[prefixRecord.status])
+                      );
+                for(var pathAnnounced in prefixRecord['records']){
+                  var pathRecord = prefixRecord['records'][pathAnnounced];
+                  var intermediaryAS = pathAnnounced.split(" ")[0];
+                  var pathLabel = 'via AS' + intermediaryAS + ' - ' + asLabels[intermediaryAS].substring(0, 35) + ((asLabels[intermediaryAS].length > 35) ? '...' : '');
+
+                  tbody.append($('<tr>')
+                        .append($('<td>').text('').attr("class", "row1"))
+                        .append($('<td>').text(pathLabel).attr("class", "row2-sub row2"))
+                        .append($('<td>').text(((pathRecord.downtime) ? pathRecord.start : '')).attr("class", "row3"))
+                        .append($('<td>').text(((pathRecord.downtime) ? pathRecord.end : '')).attr("class", "row4"))
+                        .append($('<td>').text('').attr("class", 'row5'))
+                        .attr("class", reachColors[((pathRecord.downtime) ? 1 : 0)])
+                        );
+
+                }} else if (prefixRecord.status == 0) {
+                  tbody.append($('<tr>')
+                        .append($('<td>').text(prefixAnnounced).attr("class", "row1"))
+                        .append($('<td>').text(prefixRecord.label).attr("class", "row2").attr("colspan", "3"))
+                        .append($('<td>').text(((prefixRecord.activity.length > 0) ? 'Yes' : 'No')).attr("class", ((prefixRecord.length > 0) ? 'yes row5' : 'row5')))
+                        .attr("class", 'prefix-row ' + reachColors[prefixRecord.status])
+                        );
+
+                } else {
+                  var pathRecord = prefixRecord['records'][Object.keys(prefixRecord['records'])[0]]
+                  tbody.append($('<tr>')
+                        .append($('<td>').text(prefixAnnounced).attr("class", "row1"))
+                        .append($('<td>').text(prefixRecord.label).attr("class", "row2"))
+                        .append($('<td>').text(pathRecord.start).attr("class", "row3"))
+                        .append($('<td>').text(pathRecord.end).attr("class", "row4"))
+                        .append($('<td>').text(((prefixRecord.activity.length > 0) ? 'Yes' : 'No')).attr("class", ((prefixRecord.length > 0) ? 'yes row5' : 'row5')))
+                        .attr("class", 'prefix-row ' + reachColors[prefixRecord.status])
+                        );
+
+                }
+
+            }
+            tbody.append($('<tr>').append($('<td>').text('').attr("class", "network-separator").attr("colspan", "5")));
+          }
+           $('table').find('.wait-row').attr("style", "display: none");
+        });
+    });
+    </script>
+  </head>
+  <body>
+    <table><tbody>
+      <tr>
+        <td colspan="5" style="font-weight: bold; font-size: 1.2em;">Notes on Iran's Gas Protests Internet Disconnection (November 2019)</td>
+      </tr>
+      <tr>
+        <td colspan="5" style="font-weight: bold; ">Collin Anderson (cda.io)</td>
+      </tr>
+      <tr>
+        <td colspan="5">Processed data from BGP announcements in November complemented by ZMap scans. Just because a prefix was still announced, providers may have blocked traffic. Be cautious about false positives due to short and non-overlapping outtages, or mismatched ZMap timestamps.</td>
+      </tr>
+      <tr>
+        <td colspan="5" style="font-style: italic">Last Updated December 8, 2019, Data from RIPEstat</td>
+      </tr>
+      <tr>
+        <td colspan="5" class="as-header wait-row">Generating Tables...</td>
+      </tr>
+    </tbody></table>
+  </body>
+</html>
