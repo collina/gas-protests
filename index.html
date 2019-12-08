@@ -91,8 +91,8 @@
             var asHeader = asLabels[originAsn] + " (AS" + originAsn + ")";
             tbody.append($('<tr>').append($('<td>').text(asHeader).attr("class", "as-header").attr("colspan", "5")));
             tbody.append($('<tr>').append($('<td>')
-              .append($('<a>').attr('href', "/as_neighbor_graphs/" + originAsn +".png")
-              .append($('<img>').attr('src', "/as_neighbor_graphs/" + originAsn +".png").attr('onerror', "this.style.display='none';")
+              .append($('<a>').attr('href', "as_neighbor_graphs/" + originAsn +".png")
+              .append($('<img>').attr('src', "as_neighbor_graphs/" + originAsn +".png").attr('onerror', "this.style.display='none';")
               )
               ).attr("colspan", "5").attr("class", "image-header")));
             tbody.append($('<tr>')
